@@ -1,0 +1,82 @@
+version: '3'
+
+networks:
+  webapp:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ${APP_NAME}_nginx
+    ports:
+    - "80:80"
+    links:
+      - app
+    volumes:
+      - ./:/var/www/app
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/default.conf:rw
+      - ./docker/logs/nginx:/var/logs/nginx:rw
+    depends_on:
+      - app
+
+    networks:
+      - webapp
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    depends_on:
+        - db
+    working_dir:  /var/www/app
+    container_name: ${APP_NAME}_app
+    volumes:
+      - ./:/var/www/app
+    ports:
+      - "9000:9000"
+    networks:
+      - webapp
+
+  db:
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - ./docker/mysql/database:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD:  ${DB_PASSWORD}
+    ports:
+      - 3306:3306
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    container_name: ${APP_NAME}_mysql
+    networks:
+      - webapp
+
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8090:80"
+    environment:
+      PMA_HOST:  db
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      PMA_ARBITRARY: 1
+    networks:
+        - webapp
+    container_name: ${APP_NAME}_phpmyadmin
+
+  admin_queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    depends_on:
+       - app
+       - db
+    working_dir: /var/www/app
+    container_name: ${APP_NAME}_queue
+    volumes:
+      - ./:/var/www/app
+    command: [ "php artisan queue:work --tries=3" ]
+    networks:
+      - webapp
