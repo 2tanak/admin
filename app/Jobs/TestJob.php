@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class TestJob implements ShouldQueue
 {
@@ -19,7 +20,11 @@ class TestJob implements ShouldQueue
      */
     public function __construct()
     {
-        $this->data = '333333333333333';
+        echo 55555555555555555555555;
+        echo file_put_contents( public_path('test.php'), "Hello World. Testing!");
+        $message ='dddddddddddddddffffffffffffffffffff';
+        Log::debug($message); // logger()->debug($message);
+        $this->data = 'fffffffffffff got';
     }
 
     /**
